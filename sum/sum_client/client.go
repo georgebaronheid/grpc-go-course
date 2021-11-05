@@ -18,13 +18,13 @@ func main() {
 	c := sumpb.NewSumServiceClient(cc)
 
 	req := &sumpb.SumRequest{FirstNumber: 1, SecondNumber: 123}
-	log.Println(req.String())
+	log.Printf("First value: [ %v ] | Second value: [ %v ] \n", req.GetFirstNumber(), req.GetSecondNumber())
 
 	res, err := c.Sum(context.Background(), req)
 	if err != nil {
 		log.Fatalf("[ client ] couldn't get Sum: %v", err)
 	}
 
-	log.Println("Sum result: " + res.String())
+	log.Printf("Sum result: [ %v ] ", res.GetResult())
 
 }

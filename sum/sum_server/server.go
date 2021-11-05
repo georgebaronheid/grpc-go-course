@@ -8,28 +8,28 @@ import (
     "net"
 )
 
-type serverSum struct {
+type server struct {
     sumpb.UnimplementedSumServiceServer
 }
 
-func (*serverSum) Sum(ctx context.Context, req *sumpb.SumRequest) (*sumpb.SumResponse, error){
-    v1, v2 := req.GetFirstNumber(), req.GetSecondNumber()
-    r := v1 + v2
-    grpcR := &sumpb.SumResponse{Result: r}
-    return grpcR, nil
+func (*server) Sum(ctx context.Context, req *sumpb.SumRequest) (*sumpb.SumResponse, error){
+    n1, n2 := req.GetFirstNumber(), req.GetSecondNumber()
+    s := n1 + n2
+    pbR := &sumpb.SumResponse{Result: s}
+    return pbR, nil
 }
 
 func main() {
 	l, err := net.Listen("tcp", "0.0.0.0:50051")
     if err != nil {
-        log.Fatalf("[ serverSum ] listener error: %v", err)
+        log.Fatalf("[ server ] listener error: %v", err)
     }
 
     s := grpc.NewServer()
-    sumpb.RegisterSumServiceServer(s, &serverSum{})
+    sumpb.RegisterSumServiceServer(s, &server{})
 
     if err := s.Serve(l); err != nil {
-        log.Fatalf("[ serverSum ] couldn't serverSum: %v", err)
+        log.Fatalf("[ server ] couldn't serve: %v", err)
     }
 
 }
