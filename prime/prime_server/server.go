@@ -1,12 +1,11 @@
 package main
 
 import (
-	"fmt"
+    "fmt"
     "google.golang.org/grpc"
     "grpc-go-course/prime/primepb"
     "log"
     "net"
-    "time"
 )
 
 type server struct {
@@ -29,7 +28,6 @@ func (*server) Decompose(req *primepb.PrimeRequest, stream primepb.PrimeService_
         } else {
             i++
         }
-        time.Sleep(1000 * time.Millisecond)
     }
 	return nil
 }

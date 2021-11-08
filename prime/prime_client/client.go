@@ -37,7 +37,7 @@ func doServerStreaming(c primepb.PrimeServiceClient) {
         msg, err := stream.Recv()
         if err == io.EOF {
             fmt.Println("End of stream")
-            break;
+            break
         }
         if err != nil {
             log.Fatalf("error receivieng stream? [ %v ]", err)
