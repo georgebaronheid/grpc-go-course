@@ -57,6 +57,27 @@ func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.G
 	return &res, nil
 }
 
+func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
+	fmt.Printf("GreetEveryone function was invoked")
+	const greeting = "Hello "
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("error recieving stream [ %v ]", err)
+			return err
+		}
+		r := &greetpb.GreetEveryoneResponse{Result: greeting + req.GetGreeting().GetFirstName()}
+		if err := stream.Send(r); err != nil {
+			log.Fatalf("error sending stream response [ %v ]", err)
+			return err
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
 func main() {
 	fmt.Println("[ greet_server ] Up!")
 
