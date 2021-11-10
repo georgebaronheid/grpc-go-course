@@ -15,7 +15,11 @@ func main() {
 		log.Fatalf("error dialing: [ %v ]", err)
 	}
 
-	defer cc.Close()
+	defer func(cc *grpc.ClientConn) {
+		if err := cc.Close(); err != nil {
+			log.Fatalf("error closing ClientConn: [%v]", err)
+		}
+	}(cc)
 
 	c := calculatorpb.NewCalculatorServiceClient(cc)
 
@@ -26,61 +30,62 @@ func main() {
 
 }
 
-func doBiDirectionalStreaming(c calculatorpb.CalculatorServiceClient) {
-	s, err := c.FindMaximum(context.Background())
+func doBiDirectionalStreaming(cSC calculatorpb.CalculatorServiceClient) {
+	fMC, err := cSC.FindMaximum(context.Background())
 	if err != nil {
 		log.Fatalf("error calling FindMaximum from Server: [ %v ]", err)
 		return
 	}
 	waitc := make(chan struct{})
 
-	sI := []int32{
+	iS := []int32{
 		1,
 		5,
 		3,
 		6,
 		2,
 		20,
+		200,
+		200,
+		2000,
+		2000,
+		2001,
 	}
 	go func() {
 		fmt.Println("Starting [ send GoRoutine ]")
 		//	Sending stream:
-		for _, n := range sI {
-			if err := s.Send(&calculatorpb.FindMaximumRequest{Number: n}); err != nil {
+		for _, n := range iS {
+			if err := fMC.Send(&calculatorpb.FindMaximumRequest{Number: n}); err != nil {
 				close(waitc)
 				log.Fatalf("error sending int to server: [ %v ]", err)
-				return
 			}
 		}
-		if err := s.CloseSend(); err != nil {
+		if err := fMC.CloseSend(); err != nil {
 			close(waitc)
 			log.Fatalf("error closeSend: [ %v ]", err)
-			return
 		}
-		close(waitc)
 	}()
 
 	var rIH []int32
-	i := 0
 	go func() {
-		//	Recieving stream
+		//	Receiving stream
 		for {
-			rI, err := s.Recv()
+			rI, err := fMC.Recv()
 			if err == io.EOF {
 				break
 			}
 			if err != nil {
 				close(waitc)
 				log.Fatalf("error recieving data: [ %v ]", err)
-				return
 			}
-			fmt.Printf("Recieved Maximum int: [ %v ]", rI.GetCurrentMaximum())
-			rIH[i] = rI.GetCurrentMaximum()
+			fmt.Printf("Recieved Maximum int: [ %v ]\n", rI.GetCurrentMaximum())
+			rIH = append(rIH, rI.GetCurrentMaximum())
 		}
+		close(waitc)
 	}()
 	<-waitc
 
-	fmt.Printf("All maximums were: [ %v ]", rIH)
+	fmt.Printf("All maximums were: %v\n", rIH)
 }
 
 //func doClientStreaming(c calculatorpb.CalculatorServiceClient) (err error) {

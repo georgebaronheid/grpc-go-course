@@ -57,6 +57,7 @@ func (*server) FindMaximum(stream calculatorpb.CalculatorService_FindMaximumServ
 				log.Fatalf("error sending message: [ %v ]", err)
 				return err
 			}
+			m = r
 		}
 	}
 }
