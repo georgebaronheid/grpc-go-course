@@ -12,6 +12,16 @@ message ComputeRequest {
 	int64 number = 1;
 }
 
+message FindMaximumRequest {
+	int32 number = 1;
+}
+
+message FindMaximumResponse {
+	int32 current_maximum = 1;
+}
+
+
 service CalculatorService {
 	rpc ComputeAverage (stream ComputeRequest) returns (ComputeResponse) {};
+	rpc FindMaximum (stream FindMaximumRequest) returns (stream FindMaximumResponse){};
 }
