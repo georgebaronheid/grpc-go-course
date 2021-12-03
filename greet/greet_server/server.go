@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"grpc-go-course/greet/greetpb"
 	"io"
 	"log"
@@ -54,6 +56,21 @@ func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.G
 	f, l := req.GetGreeting().GetFirstName(), req.GetGreeting().GetLastName()
 	result := "Hello " + f + " " + l
 	res := greetpb.GreetResponse{Result: result}
+	return &res, nil
+}
+
+func (*server) GreetWithDeadline(ctx context.Context, req *greetpb.GreetWithDeadlineRequest) (*greetpb.GreetWithDeadlineResponse, error) {
+	fmt.Printf("Greet function was invoked with %v", req)
+	for i := 0; i < 3; i++ {
+		if ctx.Err() == context.Canceled {
+			fmt.Println("Client side cancel")
+			return nil, status.Errorf(codes.Canceled, "Client side request cancel")
+		}
+		time.Sleep(1 * time.Second)
+	}
+	f, l := req.GetGreeting().GetFirstName(), req.GetGreeting().GetLastName()
+	result := "Hello " + f + " " + l
+	res := greetpb.GreetWithDeadlineResponse{Result: result}
 	return &res, nil
 }
 
