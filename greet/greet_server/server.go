@@ -6,6 +6,7 @@ import (
     "google.golang.org/grpc"
     "google.golang.org/grpc/codes"
     "google.golang.org/grpc/credentials"
+    "google.golang.org/grpc/reflection"
     "google.golang.org/grpc/status"
     "grpc-go-course/greet/greetpb"
     "io"
@@ -52,7 +53,7 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
     }
 }
 
-func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
+func (*server) Greet(_ context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
     fmt.Printf("Greet function was invoked with %v", req)
     f, l := req.GetGreeting().GetFirstName(), req.GetGreeting().GetLastName()
     result := "Hello " + f + " " + l
@@ -99,24 +100,28 @@ func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) er
 func main() {
     fmt.Println("[ greet_server ] Up!")
 
-    certFile := "ssl/server.crt"
-    keyFile := "ssl/server.pem"
-    creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
-    if err != nil {
-        log.Fatalf("Failed loading certificates [ %v ]", err)
-        return
+    tls := false
+    var opts []grpc.ServerOption
+    if tls {
+        certFile := "ssl/server.crt"
+        keyFile := "ssl/server.pem"
+        creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
+        if err != nil {
+            log.Fatalf("Failed loading certificates [ %v ]", err)
+            return
+        }
+
+        opts = append(opts, grpc.Creds(creds))
     }
 
-    opts := grpc.Creds(creds)
-
-    s := grpc.NewServer(opts)
-
+    s := grpc.NewServer(opts...)
     lis, err := net.Listen("tcp", "0.0.0.0:50051")
     if err != nil {
         log.Fatalf("Failed to listen: %v", err)
     }
 
     greetpb.RegisterGreetServiceServer(s, &server{})
+    reflection.Register(s)
 
     if err := s.Serve(lis); err != nil {
         log.Fatalf("Failed to server: %v", err)

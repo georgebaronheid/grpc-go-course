@@ -1,43 +1,53 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"grpc-go-course/greet/greetpb"
-	"log"
+    "context"
+    "fmt"
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/credentials"
+    "grpc-go-course/greet/greetpb"
+    "log"
 )
 
 func main() {
 
-	certFile := "ssl/ca.crt" // Certificate authority trust certificate
+    tls := true
+    opts := grpc.WithInsecure()
+    if tls {
 
-	creds, err := credentials.NewClientTLSFromFile(certFile, "")
-	if err != nil {
-		log.Fatalf("Error creating client TLS from file: [ %v ]", err)
-		return
-	}
+        certFile := "ssl/ca.crt" // Certificate authority trust certificate
 
-	opts := grpc.WithTransportCredentials(creds)
+        creds, err := credentials.NewClientTLSFromFile(certFile, "")
+        if err != nil {
+            log.Fatalf("Error creating client TLS from file: [ %v ]", err)
+            return
+        }
 
-	conn, _ := grpc.Dial("localhost:50051", opts)
-	if err != nil {
-		log.Fatalf("Dial error: %v", err)
-	}
+        opts = grpc.WithTransportCredentials(creds)
+    }
 
-	defer conn.Close()
+    conn, err := grpc.Dial("localhost:50051", opts)
+    if err != nil {
+        log.Fatalf("Dial error: %v", err)
+    }
 
-	c := greetpb.NewGreetServiceClient(conn)
-	doUnaryCall(c)
+    defer func(conn *grpc.ClientConn) {
+        err := conn.Close()
+        if err != nil {
+            log.Fatalf("Error closing connection inside defer: [ %v ]", err)
+        }
+    }(conn)
 
-	//doServerStreaming(c)
-	//doClientStreaming(c)
-	//doClientBiStreaming(c)
-	//    time.Sleep(5 * time.Second)
-	//    doUnaryWithDeadline(c, 1*time.Second) // Should complete
-	//    time.Sleep(5 * time.Second)
-	//    doUnaryWithDeadline(c, 5*time.Second) // Should time out
+    c := greetpb.NewGreetServiceClient(conn)
+    doUnaryCall(c)
+
+    //doServerStreaming(c)
+    //doClientStreaming(c)
+    //doClientBiStreaming(c)
+    //    time.Sleep(5 * time.Second)
+    //    doUnaryWithDeadline(c, 1*time.Second) // Should complete
+    //    time.Sleep(5 * time.Second)
+    //    doUnaryWithDeadline(c, 5*time.Second) // Should time out
 }
 
 //func doUnaryWithDeadline(c greetpb.GreetServiceClient, timeout time.Duration) {
@@ -199,11 +209,11 @@ func main() {
 //}
 
 func doUnaryCall(c greetpb.GreetServiceClient) {
-	fmt.Println("Starting UNARY RPC Call")
-	req := &greetpb.GreetRequest{Greeting: &greetpb.Greeting{FirstName: "George", LastName: "Baronheid"}}
-	res, err := c.Greet(context.Background(), req)
-	if err != nil {
-		log.Fatalf("Error while calling greet RPC: %v", err)
-	}
-	log.Printf("Response from greet RPC: %v", res.String())
+    fmt.Println("Starting UNARY RPC Call")
+    req := &greetpb.GreetRequest{Greeting: &greetpb.Greeting{FirstName: "George", LastName: "Baronheid"}}
+    res, err := c.Greet(context.Background(), req)
+    if err != nil {
+        log.Fatalf("Error while calling greet RPC: %v", err)
+    }
+    log.Printf("Response from greet RPC: %v", res.String())
 }
