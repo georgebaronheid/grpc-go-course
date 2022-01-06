@@ -3,7 +3,17 @@ syntax = "proto3";
 package blog;
 option go_package = "blog/blogpb";
 
-service BlogService {}
+service BlogService {
+	rpc CreateBlog (CreateBlogRequest) returns (CreateBlogResponse){};
+}
+
+message CreateBlogRequest {
+	Blog blog = 1;
+}
+
+message CreateBlogResponse {
+	Blog blog = 1; // with blog ID
+}
 
 message Blog {
 	string id = 1;
