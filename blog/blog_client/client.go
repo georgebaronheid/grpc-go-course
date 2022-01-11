@@ -33,15 +33,36 @@ func main() {
 
 	blog, err := c.CreateBlog(context.Background(), &blogpb.CreateBlogRequest{Blog: &in})
 	if err != nil {
-		log.Fatalf("Unexpected error: [ %v ]", err)
+		log.Fatalf("\nUnexpected error: [ %v ]", err)
 	}
 
-	fmt.Printf("Blog has bem created: [ %v ]\n\n", blog.GetBlog())
+	fmt.Printf("\nBlog has bem created: [ %v ]", blog.GetBlog())
 
 	readBlog, err := c.ReadBlog(context.Background(), &blogpb.ReadBlogRequest{BlogId: blog.GetBlog().GetId()})
 	if err != nil {
-		log.Fatalf("Failed to read blog: [ %v ]", err)
+		log.Fatalf("\nFailed to read blog: [ %v ]", err)
 	}
 
-	log.Printf("Read blog: [ %v ] ", readBlog)
+	log.Printf("\nRead blog: [ %v ] ", readBlog)
+
+	blogToUpdate := &blogpb.UpdateBlogRequest{Blog: &blogpb.Blog{
+		Id:       readBlog.GetBlog().GetId(),
+		AuthorId: "George Updado pra deletar",
+		Title:    "Titulo Updado",
+		Content:  readBlog.GetBlog().GetContent(),
+	}}
+
+	updateBlog, err := c.UpdateBlog(context.Background(), blogToUpdate)
+	if err != nil {
+		log.Fatalf("Failed to update: [ %v ]", err)
+	}
+
+	fmt.Printf("\n Updated blog: [ %v ]", updateBlog.GetBlog().String())
+
+	_, err = c.DeleteBlog(context.Background(), &blogpb.DeleteBlogRequest{BlogId: blogToUpdate.GetBlog().GetId()})
+	if err != nil {
+		log.Fatalf("\nError deleting: [ %v ]", err)
+	}
+
+	print(fmt.Printf("\nDeleted blog: [ %v ]", updateBlog.GetBlog().GetId()))
 }

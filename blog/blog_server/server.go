@@ -145,10 +145,69 @@ func (*server) ReadBlog(_ context.Context, req *blogpb.ReadBlogRequest) (*blogpb
 		return nil, status.Errorf(codes.NotFound, "[ blog ] couldn't find given ID: [ %v ]", err)
 	}
 
-	return &blogpb.ReadBlogResponse{Blog: &blogpb.Blog{
+	return &blogpb.ReadBlogResponse{Blog: dataToBlogPB(data)}, nil
+}
+
+func dataToBlogPB(data *blogItem) *blogpb.Blog {
+	return &blogpb.Blog{
 		Id:       data.ID.Hex(),
 		AuthorId: data.AuthorID,
 		Title:    data.Title,
 		Content:  data.Content,
-	}}, nil
+	}
+}
+
+func (*server) UpdateBlog(_ context.Context, req *blogpb.UpdateBlogRequest) (*blogpb.UpdateBlogResponse, error) {
+
+	blog := req.GetBlog()
+	oid, err := primitive.ObjectIDFromHex(blog.GetId())
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Cannot parse ID"))
+	}
+
+	data := &blogItem{}
+	filter := bson.M{"_id": oid}
+
+	res := collection.FindOne(context.Background(), filter)
+	if err := res.Decode(data); err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Couldn't find specified blog item: [ %v ]", err))
+	}
+
+	data.AuthorID = blog.GetAuthorId()
+	data.Content = blog.GetContent()
+	data.Title = blog.GetTitle()
+
+	_, err = collection.ReplaceOne(context.Background(), filter, data)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Internal error Replacing one: [ %v ]", err))
+	}
+
+	return &blogpb.UpdateBlogResponse{Blog: dataToBlogPB(data)}, nil
+}
+
+func (*server) DeleteBlog(_ context.Context, req *blogpb.DeleteBlogRequest) (*blogpb.DeleteBlogResponse, error) {
+	oid, err := primitive.ObjectIDFromHex(req.GetBlogId())
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("\nCouldn't parse ID: [ %v ]", err))
+	}
+
+	result, err := collection.DeleteOne(context.Background(), bson.M{"_id": oid})
+	if err != nil {
+		return nil, status.Errorf(
+			codes.NotFound,
+			fmt.Sprintf("\nCouldn't delete object: [ %v ]", err))
+	}
+	if result.DeletedCount != 1 {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("\nDeleted more objects than needed: want [ %v ] got [ %v ]", 1, result.DeletedCount))
+	}
+
+	return &blogpb.DeleteBlogResponse{Success: true}, nil
 }

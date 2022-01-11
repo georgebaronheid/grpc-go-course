@@ -6,6 +6,24 @@ option go_package = "blog/blogpb";
 service BlogService {
 	rpc CreateBlog (CreateBlogRequest) returns (CreateBlogResponse){};
 	rpc ReadBlog (ReadBlogRequest) returns (ReadBlogResponse){}; // return NOT_FOUND if not found
+	rpc UpdateBlog (UpdateBlogRequest) returns (UpdateBlogResponse){}; // NOT_FOUND if not found
+	rpc DeleteBlog (DeleteBlogRequest) returns (DeleteBlogResponse){};
+}
+
+message DeleteBlogRequest {
+	string blog_id = 1;
+}
+
+message DeleteBlogResponse {
+	bool success = 1;
+}
+
+message UpdateBlogRequest {
+	Blog blog = 1;
+}
+
+message UpdateBlogResponse {
+	Blog blog = 1;
 }
 
 message CreateBlogRequest {
