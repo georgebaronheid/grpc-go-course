@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-
 	opts := grpc.WithInsecure()
 
 	conn, err := grpc.Dial("localhost:50051", opts)
@@ -37,5 +36,12 @@ func main() {
 		log.Fatalf("Unexpected error: [ %v ]", err)
 	}
 
-	fmt.Printf("Blog has bem created: [ %v ]", blog.GetBlog())
+	fmt.Printf("Blog has bem created: [ %v ]\n\n", blog.GetBlog())
+
+	readBlog, err := c.ReadBlog(context.Background(), &blogpb.ReadBlogRequest{BlogId: blog.GetBlog().GetId()})
+	if err != nil {
+		log.Fatalf("Failed to read blog: [ %v ]", err)
+	}
+
+	log.Printf("Read blog: [ %v ] ", readBlog)
 }

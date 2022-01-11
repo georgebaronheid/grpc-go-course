@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -94,7 +95,7 @@ func main() {
 
 }
 
-func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (res *blogpb.CreateBlogResponse, err error) {
+func (*server) CreateBlog(_ context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
 	blog := req.GetBlog()
 
 	data := blogItem{
@@ -119,12 +120,35 @@ func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (r
 		)
 	}
 
-	res = &blogpb.CreateBlogResponse{Blog: &blogpb.Blog{
+	res := &blogpb.CreateBlogResponse{Blog: &blogpb.Blog{
 		Id:       oid.Hex(),
 		AuthorId: blog.GetAuthorId(),
 		Title:    blog.GetTitle(),
 		Content:  blog.GetContent(),
 	}}
 
-	return
+	return res, nil
+}
+
+func (*server) ReadBlog(_ context.Context, req *blogpb.ReadBlogRequest) (*blogpb.ReadBlogResponse, error) {
+	oid, err := primitive.ObjectIDFromHex(req.GetBlogId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "[ blog ] couldn't parse invalid id: [ %v ]", oid)
+	}
+
+	// create an empty struct
+	data := &blogItem{}
+	filter := bson.M{"_id": oid}
+
+	result := collection.FindOne(context.Background(), filter)
+	if err := result.Decode(data); err != nil {
+		return nil, status.Errorf(codes.NotFound, "[ blog ] couldn't find given ID: [ %v ]", err)
+	}
+
+	return &blogpb.ReadBlogResponse{Blog: &blogpb.Blog{
+		Id:       data.ID.Hex(),
+		AuthorId: data.AuthorID,
+		Title:    data.Title,
+		Content:  data.Content,
+	}}, nil
 }
