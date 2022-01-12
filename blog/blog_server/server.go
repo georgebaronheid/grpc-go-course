@@ -211,3 +211,41 @@ func (*server) DeleteBlog(_ context.Context, req *blogpb.DeleteBlogRequest) (*bl
 
 	return &blogpb.DeleteBlogResponse{Success: true}, nil
 }
+
+func (*server) ListBlog(_ *blogpb.ListBlogRequest, stream blogpb.BlogService_ListBlogServer) error {
+	cursor, err := collection.Find(context.Background(), primitive.D{})
+	if err != nil {
+		return status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("\nUnknown internal error finding objects [ %v ]", err))
+	}
+
+	defer func(cursor *mongo.Cursor, ctx context.Context) {
+		err := cursor.Close(ctx)
+		if err != nil {
+			fmt.Printf("\nUnknown internal error closing cursor [ %v ]", err)
+		}
+	}(cursor, context.Background())
+
+	for cursor.Next(context.Background()) {
+		data := &blogItem{}
+		err := cursor.Decode(data)
+		if err != nil {
+			return status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("\nUnknown internal error decoding data [ %v ]", err))
+		}
+		err = stream.Send(&blogpb.ListBlogResponse{Blog: dataToBlogPB(data)})
+		if err != nil {
+			return status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("\nUnknown internal error sending data [ %v ]", err))
+		}
+	}
+	if err := cursor.Err(); err != nil {
+		return status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("\nUnknown internal error [ %v ]", err))
+	}
+	return nil
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"grpc-go-course/blog/blogpb"
+	"io"
 	"log"
 )
 
@@ -64,5 +65,25 @@ func main() {
 		log.Fatalf("\nError deleting: [ %v ]", err)
 	}
 
-	print(fmt.Printf("\nDeleted blog: [ %v ]", updateBlog.GetBlog().GetId()))
+	fmt.Printf("\nDeleted blog: [ %v ]", updateBlog.GetBlog().GetId())
+
+	//	List Blogs
+
+	listBlog, err := c.ListBlog(context.Background(), &blogpb.ListBlogRequest{})
+	if err != nil {
+		log.Fatalf("\nError calling ListBlog method: [ %v ]", err)
+	}
+
+	i := 0
+	for {
+		res, err := listBlog.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Error inside stream for: [ %v ]", err)
+		}
+		i++
+		fmt.Printf("\n[ %v ] -> [ %v ]", i, res.GetBlog().String())
+	}
 }
